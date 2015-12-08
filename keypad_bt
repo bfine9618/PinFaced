@@ -1,0 +1,98 @@
+#include <Keypad.h>
+#include <SoftwareSerial.h>
+SoftwareSerial  BTSerial(10, 11); //RX TX
+
+const byte ROWS = 4; // Four rows
+const byte COLS = 3; // Three columns
+// Define the Keymap
+char keys[ROWS][COLS] = {
+  {'1','2','3'},
+  {'4','5','6'},
+  {'7','8','9'},
+  {'*','0','#'}
+};
+// Connect keypad ROW0, ROW1, ROW2 and ROW3 to these Arduino pins.
+byte rowPins[ROWS] = { 8, 9, 2, 4 };
+// Connect keypad COL0, COL1 and COL2 to these Arduino pins.
+byte colPins[COLS] = { 3, 5, 6 }; 
+
+// Create the Keypad
+Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+int goodpin = 12;
+int waitpin = 13;
+
+String ids[5] = {"68854534", "79745144"};
+String pins[5] = {"4996", "1638"};
+
+void setup()
+{
+  BTSerial.begin(9600); 
+  pinMode(goodpin,OUTPUT);
+  digitalWrite(goodpin, LOW);
+  pinMode(waitpin, OUTPUT);
+  digitalWrite(waitpin, HIGH);
+  Serial.begin(9600);
+  kpd.setDebounceTime(250);           // Default is 50mS
+  
+}
+ int i = 0;
+ String str = "";
+ String id = "";
+ int c = 0;
+ int h = 0;
+ String pin;
+  void loop()
+  {
+    if (Serial.available() > 0) {
+      id = Serial.readString();
+      Serial.println(id);  
+      id = id.substring(8,16);
+      Serial.println(id);
+      c = 0;
+      h = 1;
+    }
+    
+
+    for (int i = 0; i < 5; i++) {
+     if(ids[i].equals(id)) {pin = pins[i];}
+    }
+    
+    if(h == 1 && pin.length() == 4) 
+    {
+      Serial.println(pin);
+      h = 0;
+    }
+
+    while(pin.length() == 4 && c < 1) {
+      BTSerial.println(pin);
+      c++;
+      }
+    
+  char key = kpd.getKey();
+   if(key)
+   {
+   digitalWrite(waitpin, LOW);
+   delay(250);
+   digitalWrite(waitpin, HIGH);
+   str += (char) key;
+   Serial.println(str);
+   }
+
+if(pin.equals(str) && str != "")
+{
+Serial.println("Match!");
+digitalWrite(goodpin, HIGH);
+digitalWrite(waitpin, LOW);
+delay(2000);
+digitalWrite(goodpin, LOW);
+digitalWrite(waitpin, HIGH);
+str = "";
+}
+
+if(str.length() == 4 && pin != str){
+  Serial.println("False, try again");
+  Serial.println(pin);
+  str = "";
+}
+}
